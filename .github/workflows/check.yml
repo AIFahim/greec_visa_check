@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/check.yml"
+      - "checker.py"
+      - "run_once.py"
+      - "notifier.py"
+      - "config.py"
+      - "requirements.txt"
 
 concurrency:
   group: visa-check
