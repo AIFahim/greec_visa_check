@@ -1,0 +1,8 @@
+.env
+*.pyc
+__pycache__/
+.venv/
+.idea/
+debug/
+*.log
+seen_state.json
