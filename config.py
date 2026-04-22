@@ -42,6 +42,8 @@ class Config:
     debug_dump: bool
     auto_book: bool
     auto_book_cutoff_date: dt.date | None
+    booking_purpose: str
+    booking_host: str
 
 
 def load() -> Config:
@@ -59,4 +61,6 @@ def load() -> Config:
         debug_dump=os.getenv("DEBUG_DUMP", "false").lower() == "true",
         auto_book=os.getenv("AUTO_BOOK", "false").lower() == "true",
         auto_book_cutoff_date=_parse_date(_opt("AUTO_BOOK_CUTOFF_DATE")),
+        booking_purpose=_opt("BOOKING_PURPOSE") or "Research visit to CERTH, Thessaloniki, Greece",
+        booking_host=_opt("BOOKING_HOST") or "CERTH (Centre for Research & Technology Hellas), Thessaloniki",
     )

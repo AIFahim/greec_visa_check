@@ -112,6 +112,8 @@ def _try_autobook(page: Page, cfg: Config) -> tuple[bool, str, str]:
     if dialog_when:
         when_text = dialog_when
 
+    _fill_custom_fields(page, cfg)
+
     # Optional cutoff: if user set AUTO_BOOK_CUTOFF_DATE and slot is on/after it, bail.
     if cfg.auto_book_cutoff_date:
         slot_date = _parse_slot_date(start_val or when_text)
@@ -170,6 +172,77 @@ def _try_autobook(page: Page, cfg: Config) -> tuple[bool, str, str]:
         pass
 
     return False, "Auto-book: submitted but could not confirm success.", when_text
+
+
+_KNOWN_PREFILLED_IDS = {
+    "reservation_start_time",
+    "reservation_finish_time",
+    "reservation_full_name",
+    "reservation_mobile",
+    "reservation_address",
+    "reservation_resource_id",
+}
+
+
+def _fill_custom_fields(page: Page, cfg: Config) -> None:
+    """Best-effort: fill any empty custom text fields in the reservation dialog.
+
+    The Greek embassy's SuperSaaS booking form has three pre-filled fields
+    (name/mobile/address). If the embassy adds a custom field like 'Purpose
+    of visit', SuperSaaS renders it under `.form-custom`. This function
+    finds any such empty, editable field and fills it with a sensible
+    default derived from config so the reservation can still be submitted.
+    """
+    purpose = cfg.booking_purpose
+    host = cfg.booking_host
+
+    try:
+        inputs = page.locator(
+            '#reservation input[type="text"], #reservation input[type="tel"], '
+            '#reservation input[type="email"], #reservation input:not([type]), '
+            '#reservation textarea'
+        )
+        count = inputs.count()
+    except Exception:
+        return
+
+    for i in range(count):
+        try:
+            el = inputs.nth(i)
+            el_id = (el.get_attribute("id") or "").strip()
+            if el_id in _KNOWN_PREFILLED_IDS:
+                continue
+            if (el.get_attribute("readonly") or "").strip():
+                continue
+            if not el.is_visible():
+                continue
+            if (el.input_value() or "").strip():
+                continue
+
+            name = (el.get_attribute("name") or "").lower()
+            placeholder = (el.get_attribute("placeholder") or "").lower()
+            label_text = ""
+            if el_id:
+                try:
+                    label = page.locator(f'label[for="{el_id}"]').first
+                    if label.count() > 0:
+                        label_text = (label.inner_text() or "").lower()
+                except Exception:
+                    pass
+            haystack = f"{name} {placeholder} {label_text}"
+
+            value = purpose
+            if any(k in haystack for k in ("host", "institution", "organization", "organisation", "employer", "company")):
+                value = host
+            elif any(k in haystack for k in ("passport",)):
+                # Don't guess — leave blank, SuperSaaS will reject and we log.
+                continue
+            elif any(k in haystack for k in ("purpose", "reason", "visit", "research", "comment", "note", "detail")):
+                value = purpose
+
+            el.fill(value, timeout=3_000)
+        except Exception:
+            continue
 
 
 def _parse_slot_date(text: str) -> dt.date | None:
