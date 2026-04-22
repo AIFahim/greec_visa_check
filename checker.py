@@ -46,6 +46,17 @@ def _login(page: Page, cfg: Config) -> None:
 
     page.wait_for_load_state("domcontentloaded", timeout=30_000)
 
+    body_after = ""
+    try:
+        body_after = page.locator("body").inner_text(timeout=5_000).lower()
+    except Exception:
+        pass
+    if "too many requests" in body_after:
+        raise RuntimeError(
+            "SuperSaaS rate-limited login attempts ('Too many requests from this browser'). "
+            "Back off polling and/or wait for the block to expire."
+        )
+
     if page.locator('input[type="password"]').count() > 0:
         err = page.locator("body").inner_text()[:400]
         raise RuntimeError(f"Login appears to have failed. Page still shows password field. Excerpt: {err!r}")
@@ -305,10 +316,11 @@ def check_once(cfg: Config) -> CheckResult:
             if page.locator('input[type="password"]').count() > 0 or "/schedule/login/" in page.url:
                 _login(page, cfg)
 
-            try:
-                context.storage_state(path=str(STORAGE_STATE_FILE))
-            except Exception:
-                pass
+            if "/schedule/login/" not in page.url and page.locator('input[type="password"]').count() == 0:
+                try:
+                    context.storage_state(path=str(STORAGE_STATE_FILE))
+                except Exception:
+                    pass
 
             available, summary = _scan_for_slots(page)
             page_url = page.url
