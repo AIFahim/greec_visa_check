@@ -10,11 +10,15 @@ from config import load
 from notifier import notify
 
 STATE_FILE = Path(__file__).parent / "seen_state.json"
+LOG_FILE = Path(__file__).parent / "checker.log"
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
+    handlers=[
+        logging.StreamHandler(sys.stdout),
+        logging.FileHandler(LOG_FILE, encoding="utf-8"),
+    ],
 )
 log = logging.getLogger("greek-visa")
 
