@@ -66,6 +66,10 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           NOTIFY_TO: ${{ secrets.NOTIFY_TO }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AUTO_BOOK: ${{ vars.AUTO_BOOK || 'false' }}
+          AUTO_BOOK_CUTOFF_DATE: ${{ vars.AUTO_BOOK_CUTOFF_DATE }}
           HEADLESS: "true"
           DEBUG_DUMP: "false"
         run: python run_once.py
