@@ -1,8 +1,8 @@
 name: Greek visa slot check
 
 on:
-  # Scheduled polling moved to the Hetzner VM (see deploy/HETZNER_VM_SETUP.md).
-  # This workflow stays only for manual smoke tests via workflow_dispatch.
+  schedule:
+    - cron: "*/15 * * * *"
   workflow_dispatch: {}
 
 concurrency:
