@@ -8,6 +8,11 @@ from playwright.sync_api import Page, TimeoutError as PWTimeout, sync_playwright
 from config import Config
 
 DEBUG_DIR = Path(__file__).parent / "debug"
+STORAGE_STATE_FILE = Path(__file__).parent / "browser_state.json"
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/130.0.0.0 Safari/537.36"
+)
 
 
 @dataclass
@@ -22,7 +27,8 @@ class CheckResult:
 
 
 def _login(page: Page, cfg: Config) -> None:
-    page.goto(cfg.supersaas_url, wait_until="domcontentloaded", timeout=30_000)
+    if "/schedule/login/" not in page.url:
+        page.goto(cfg.supersaas_url, wait_until="domcontentloaded", timeout=30_000)
 
     email_field = page.locator(
         'input[type="email"], input[name*="email" i], input[id*="email" i], input[name="name"]'
@@ -273,10 +279,37 @@ def check_once(cfg: Config) -> CheckResult:
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=cfg.headless)
-        context = browser.new_context(viewport={"width": 1400, "height": 900})
+        ctx_kwargs = {"viewport": {"width": 1400, "height": 900}, "user_agent": USER_AGENT}
+        if STORAGE_STATE_FILE.exists():
+            try:
+                ctx_kwargs["storage_state"] = str(STORAGE_STATE_FILE)
+            except Exception:
+                pass
+        context = browser.new_context(**ctx_kwargs)
         page = context.new_page()
         try:
-            _login(page, cfg)
+            schedule_url = cfg.supersaas_url.replace("/schedule/login/", "/schedule/")
+            try:
+                page.goto(schedule_url, wait_until="domcontentloaded", timeout=30_000)
+            except Exception:
+                page.goto(cfg.supersaas_url, wait_until="domcontentloaded", timeout=30_000)
+
+            body_snippet = ""
+            try:
+                body_snippet = page.locator("body").inner_text(timeout=5_000).lower()
+            except Exception:
+                pass
+            if "too many requests" in body_snippet:
+                raise RuntimeError("SuperSaaS rate-limited: 'Too many requests from this browser'. Back off polling.")
+
+            if page.locator('input[type="password"]').count() > 0 or "/schedule/login/" in page.url:
+                _login(page, cfg)
+
+            try:
+                context.storage_state(path=str(STORAGE_STATE_FILE))
+            except Exception:
+                pass
+
             available, summary = _scan_for_slots(page)
             page_url = page.url
 

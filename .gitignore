@@ -6,3 +6,4 @@ __pycache__/
 debug/
 *.log
 seen_state.json
+browser_state.json

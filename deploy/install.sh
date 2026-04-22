@@ -62,7 +62,7 @@ Description=Run Greek visa slot checker every minute
 
 [Timer]
 OnBootSec=30s
-OnUnitActiveSec=60s
+OnUnitActiveSec=300s
 AccuracySec=5s
 Persistent=true
 Unit=${SERVICE_NAME}.service
