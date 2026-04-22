@@ -1,8 +1,9 @@
 name: Greek visa slot check
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
+  # Scheduled polling currently PAUSED while SuperSaaS account-level rate
+  # limit clears (triggered by earlier over-aggressive polling). Re-enable
+  # the schedule by restoring the cron line once a manual dispatch succeeds.
   workflow_dispatch: {}
 
 concurrency:
