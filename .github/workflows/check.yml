@@ -1,18 +1,9 @@
 name: Greek visa slot check
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # Scheduled polling moved to the Hetzner VM (see deploy/HETZNER_VM_SETUP.md).
+  # This workflow stays only for manual smoke tests via workflow_dispatch.
   workflow_dispatch: {}
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/check.yml"
-      - "checker.py"
-      - "run_once.py"
-      - "notifier.py"
-      - "config.py"
-      - "requirements.txt"
 
 concurrency:
   group: visa-check
